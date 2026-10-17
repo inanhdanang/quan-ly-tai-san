@@ -12,6 +12,14 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('n
   const qrTag=/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/qrcode-generator[^"\s]+"[^>]*><\/script>/;
   const source=index.replace(qrTag,()=>fs.readFileSync(root+'/QR.html','utf8')).replace(clientTag,()=>bridge+'<script>\n'+clientSource+'</script>');
   await p.setContent(source);await p.waitForFunction(()=>typeof D!=='undefined'&&D&&document.getElementById('content').textContent.includes('Hoạt động gần đây'));
+  await p.selectOption('#fontSize','1.3');await p.evaluate(()=>assetForm());
+  assert.equal(await p.locator('#fields input[name=name]').evaluate(el=>getComputedStyle(el).fontSize),'19.5px');
+  for(const width of [1440,390]){
+    await p.setViewportSize({width,height:980});
+    assert.ok(await p.locator('#fields').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Large text drawer must fit');
+    assert.ok(await p.locator('#submit').isVisible());
+  }
+  await p.evaluate(()=>closeForm());await p.selectOption('#fontSize','1');await p.setViewportSize({width:1440,height:980});
   await p.screenshot({path:root+'/Giao-dien-may-tinh.png',fullPage:true});
   for(const view of ['assets','issue','audit','stock','report','employees','catalog','settings']){await p.evaluate(v=>go(v),view);assert.ok((await p.locator('#content').innerText()).length>20);}
   // Add and edit a purchased asset through the drawer, then allocate it.
@@ -50,6 +58,28 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('n
   const qrSource=fs.readFileSync(root+'/QR.html','utf8').replace(/^<script>\n/,'').replace(/\n<\/script>\s*$/,'');
   await external.route('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',route=>route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:qrSource}));
   await external.setContent(index.replace('</head>',()=>bridge+'</head>'));await external.waitForFunction(()=>window.__assetReady===true);assert.equal(await external.locator('#nav button').count(),9);await external.evaluate(id=>detail(id),a.id);assert.equal(await external.locator('.qr-box svg').count(),1);await external.close();
+  // Font preference changes real text sizes, survives reload, and works without storage.
+  const fonts=await browser.newPage({viewport:{width:1440,height:980}});
+  await fonts.route('https://font-preference.test/**',route=>route.fulfill({contentType:'text/html',body:index.replace(/<script src=[^>]+><\/script>/g,'')}));
+  await fonts.goto('https://font-preference.test/');
+  const baseFont=await fonts.locator('body').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  for(const scale of ['0.9','1','1.15','1.3']){
+    await fonts.selectOption('#fontSize',scale);
+    const actual=await fonts.locator('body').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+    assert.ok(Math.abs(actual-baseFont*Number(scale))<0.02);
+    await fonts.setViewportSize({width:390,height:844});
+    assert.ok(await fonts.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Font control must fit mobile');
+    assert.ok(await fonts.locator('#fontSize').isVisible());
+  }
+  await fonts.reload();assert.equal(await fonts.inputValue('#fontSize'),'1.3');
+  await fonts.evaluate(()=>localStorage.setItem('asset-manager-font-scale','invalid'));
+  await fonts.reload();assert.equal(await fonts.inputValue('#fontSize'),'1');
+  await fonts.close();
+  const blocked=await browser.newPage();
+  await blocked.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw new Error('Storage blocked');}}));
+  await blocked.route('https://blocked-storage.test/**',route=>route.fulfill({contentType:'text/html',body:index.replace(/<script src=[^>]+><\/script>/g,'')}));
+  await blocked.goto('https://blocked-storage.test/');await blocked.selectOption('#fontSize','1.3');
+  assert.equal(await blocked.locator('body').evaluate(el=>getComputedStyle(el).fontSize),'19.5px');await blocked.close();
   const installer=await browser.newPage();installer.on('pageerror',e=>errors.push(e.message));await installer.setContent(fs.readFileSync(root+'/Bat-dau.html','utf8'));for(const name of ['Code.gs','Domain.js','Seed.gs','Index.html','QR.html','appsscript.json']){await installer.selectOption('#files',name);assert.equal(await installer.inputValue('#source'),fs.readFileSync(root+'/'+name,'utf8'),'Installer content mismatch: '+name);}await installer.close();
   assert.deepEqual(errors,[]);console.log('Browser PASS: dashboard, detail/QR link, grouped drawers, search/multi-select, person & department issue, sale preview/document, 5 report tabs/CSV, mobile audit/save/filter/menu, settings.');
  }finally{await browser.close();}

@@ -99,3 +99,8 @@ Không cần dán App.js vào Apps Script hoặc thay appsscript.json. Mã trên
 4. Mở lại /exec, Ctrl+Shift+R. Chân menu có **v2.0.3**.
 
 Không chạy setup, seedDemo hoặc thay các tab dữ liệu cho riêng bản cập nhật cỡ chữ này. Chữ ô nhập 15 px trên máy tính và 16 px trên điện thoại; nhãn 14 px; chữ phụ được làm rõ màu, biểu mẫu máy tính rộng 640 px, điện thoại xếp ô nhập thành một cột. Bộ JavaScript khóa ở bản đã kiểm tra trước đó, không thay đổi nghiệp vụ hay quyền Google.
+
+
+## Cỡ chữ tùy chọn — 2.0.4
+
+Thay toàn bộ **Index.html** bằng bản mới, lưu rồi vào **Triển khai → Quản lý các bản triển khai → Chỉnh sửa → Phiên bản mới → Triển khai**. Mở lại đường dẫn ứng dụng. Chọn **Cỡ chữ** ở thanh đầu trang: Nhỏ, Vừa, Lớn hoặc Rất lớn. Lựa chọn áp dụng cả biểu mẫu và được lưu riêng trên trình duyệt nếu cho phép lưu trữ. Không cần chạy setup hoặc seedDemo.
