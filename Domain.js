@@ -44,11 +44,41 @@ var Domain = (() => {
     return result;
   }
   function transition(asset, type) {
-    const rules = { CAP_PHAT: ['TRONG_KHO'], DIEU_CHUYEN: ['DANG_DUNG'], THU_HOI: ['DANG_DUNG'], THANH_LY: ['TRONG_KHO', 'DANG_DUNG'] };
+    const rules = {
+      CAP_PHAT: ['TRONG_KHO'], DIEU_CHUYEN: ['DANG_DUNG'],
+      THU_HOI: ['DANG_DUNG'], CHO_MUON: ['TRONG_KHO'], TRA_MUON: ['DANG_MUON'],
+      SUA_CHUA: ['TRONG_KHO','DANG_DUNG','HONG'], HOAN_TAT_SUA: ['DANG_SUA'],
+      BAO_HONG: ['TRONG_KHO','DANG_DUNG','DANG_MUON'],
+      BAO_MAT: ['TRONG_KHO','DANG_DUNG','DANG_MUON','HONG'],
+      THANH_LY: ['TRONG_KHO','DANG_DUNG','HONG','THAT_LAC','DANG_SUA']
+    };
     if (asset.kind === 'VT') throw Error('Vật tư dùng nhập / xuất kho');
     if (!rules[type] || !rules[type].includes(asset.status)) throw Error('Trạng thái hiện tại không cho phép thao tác này');
-    return type === 'THANH_LY' ? 'THANH_LY' : type === 'THU_HOI' ? 'TRONG_KHO' : 'DANG_DUNG';
+    return ({THANH_LY:'THANH_LY',THU_HOI:'TRONG_KHO',TRA_MUON:'TRONG_KHO',
+      CHO_MUON:'DANG_MUON',SUA_CHUA:'DANG_SUA',BAO_HONG:'HONG',BAO_MAT:'THAT_LAC',
+      HOAN_TAT_SUA:asset.employeeId||asset.department?'DANG_DUNG':'TRONG_KHO'})[type] || 'DANG_DUNG';
   }
-  return { number, date, depreciation, validateAsset, stock, transition };
+  function emails(value) {
+    const list = [...new Set(String(value || '').split(/[,;\s]+/).filter(Boolean).map(s=>s.toLowerCase()))];
+    if (list.some(s=>!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))) throw Error('Email không hợp lệ');
+    return list;
+  }
+  function alerts(data, today, days) {
+    date(today); const until = new Date(today+'T00:00:00Z'); until.setUTCDate(until.getUTCDate()+Number(days||30));
+    const limit = until.toISOString().slice(0,10), list = [];
+    data.assets.filter(a=>a.kind!=='VT'&&a.status!=='THANH_LY').forEach(a=>{
+      if(a.status==='DANG_MUON'&&a.loanDueDate&&a.loanDueDate<today) list.push({type:'loan',assetId:a.id,title:'Mượn quá hạn chưa trả',date:a.loanDueDate,employeeId:a.employeeId});
+      const completed=(data.maintenance||[]).filter(m=>m.assetId===a.id);
+      const nextDates=completed.filter(m=>m.nextDate&&!completed.some(n=>n.date>=m.nextDate)).map(m=>m.nextDate);
+      if(a.nextMaintenance&&!completed.some(m=>m.date>=a.nextMaintenance)) nextDates.push(a.nextMaintenance);
+      const next=nextDates.sort()[0];
+      if(next&&next<=limit) list.push({type:next<today?'maintenanceLate':'maintenanceSoon',assetId:a.id,title:next<today?'Quá hạn bảo trì':'Bảo trì trong thời gian tới',date:next,employeeId:a.employeeId});
+      if(a.warrantyDate&&a.warrantyDate>=today&&a.warrantyDate<=limit) list.push({type:'warranty',assetId:a.id,title:'Sắp hết bảo hành',date:a.warrantyDate,employeeId:a.employeeId});
+      if(a.status==='HONG') list.push({type:'broken',assetId:a.id,title:'Hỏng đang chờ sửa chữa',date:'',employeeId:a.employeeId});
+      if(a.status==='THAT_LAC') list.push({type:'lost',assetId:a.id,title:'Thất lạc',date:'',employeeId:a.employeeId});
+    });
+    return list;
+  }
+  return { number, date, depreciation, validateAsset, stock, transition, emails, alerts };
 })();
 if (typeof module !== 'undefined') module.exports = Domain;
