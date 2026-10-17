@@ -59,3 +59,15 @@ Không cần tạo bản triển khai mới nếu muốn giữ URL/QR hiện t�
 8. Muốn bật email, vào Cài đặt → chọn email/giờ → bật gửi hằng ngày → Lưu. Chỉ bật khi địa chỉ nhận đã đúng. Trigger của Google gửi trong khoảng giờ chọn, không đúng từng phút.
 
 Bạn có thể tắt email trong Cài đặt. Mọi file PDF/ảnh và báo cáo xuất ra Drive mặc định không được ứng dụng chia sẻ công khai.
+
+## Nếu ứng dụng kẹt ở “Đang tải dữ liệu…”
+
+Bản vá sau V2 tải dữ liệu ngay, không chờ bước đọc tham số URL; có thông báo lỗi khởi động và thời gian chờ. Bản vá không đổi cấu trúc dữ liệu.
+
+1. Thay **Index.html** và **Code.gs** bằng bản mới nhất trên GitHub. Lưu.
+2. Chọn hàm **diagnose → Chạy**. Hàm này chỉ đọc dữ liệu, không tạo mẫu hoặc xóa dữ liệu. Nhật ký sẽ ghi số lượng tài sản/nhân viên/giao dịch và thời gian đọc, không in nội dung riêng tư.
+3. Nếu báo thiếu tab/cột, chạy **setup** để nâng cấp cấu trúc, rồi chạy diagnose lại. Không chạy seedDemo.
+4. Nếu diagnose báo kết nối thành công, cập nhật **Quản lý bản triển khai → bút chì → Phiên bản mới → Triển khai**. Mở lại URL /exec, Ctrl+Shift+R.
+5. Nếu vẫn không tải được, chụp thông báo mới trên trang và mục **Lần thực thi** của Apps Script (biểu tượng đồng hồ bên trái), mở lượt gọi getData/diagnose mới nhất. Không gửi mật khẩu/token hoặc toàn bộ dữ liệu tài sản.
+
+Thông báo mới giúp phân biệt lỗi giao diện, thiếu cấu trúc, quyền truy cập và Google xử lý chậm. Chưa thể kết luận nguyên nhân trên tài khoản thật chỉ từ vòng quay tải ban đầu.

@@ -16,13 +16,15 @@ const TABLES = {
   YeuCau: ['id','status','payload','createdAt'],
   ThuNhac: ['id','date','recipient','count','createdAt']
 };
+let spreadsheetCache_=null;
+let rowCache_={};
 const DEFAULTS = {businessName:'Hộ kinh doanh in ảnh',address:'',reminderEmail:'',reminderDays:'30',remindersEnabled:'false',reminderHour:'8',notifyAssignees:'false',copyOwner:'false',autoSavePdf:'false',webAppUrl:''};
 function onOpen() { SpreadsheetApp.getUi().createMenu('Quản lý tài sản').addItem('Khởi tạo / Nâng cấp giữ dữ liệu','setup').addItem('Thêm dữ liệu mẫu','seedDemo').addItem('Áp dụng lịch email đã cài đặt','enableReminders').addToUi(); }
 function setup() {
   const lock=LockService.getScriptLock();lock.waitLock(30000);
   try {
-    const ss=SpreadsheetApp.getActiveSpreadsheet();if(!ss)throw Error('Mở Apps Script từ Google Sheets rồi chạy setup.');
-    PropertiesService.getScriptProperties().setProperty('SHEET_ID',ss.getId());ss.setSpreadsheetTimeZone('Asia/Ho_Chi_Minh');
+    rowCache_={};const ss=SpreadsheetApp.getActiveSpreadsheet();if(!ss)throw Error('Mở Apps Script từ Google Sheets rồi chạy setup.');
+    PropertiesService.getScriptProperties().setProperty('SHEET_ID',ss.getId());spreadsheetCache_=ss;ss.setSpreadsheetTimeZone('Asia/Ho_Chi_Minh');
     // Preflight all headers before writing anything. Accept only a prefix of this schema.
     Object.keys(TABLES).forEach(name=>{const s=ss.getSheetByName(name);if(!s||!s.getLastRow())return;
       const current=s.getRange(1,1,1,s.getLastColumn()).getDisplayValues()[0];
@@ -44,12 +46,12 @@ function setup() {
     syncCatalogs_();return 'Đã nâng cấp V2, giữ nguyên dữ liệu. Không chạy seedDemo trên dữ liệu đang dùng.';
   } finally {lock.releaseLock();}
 }
-function db(){const id=PropertiesService.getScriptProperties().getProperty('SHEET_ID');if(!id)throw Error('Chạy setup để khởi tạo hoặc nâng cấp trước.');return SpreadsheetApp.openById(id);}
+function db(){if(spreadsheetCache_)return spreadsheetCache_;const id=PropertiesService.getScriptProperties().getProperty('SHEET_ID');if(!id)throw Error('Chạy setup để khởi tạo hoặc nâng cấp trước.');spreadsheetCache_=SpreadsheetApp.openById(id);return spreadsheetCache_;}
 function sheet(name){if(!TABLES[name])throw Error('Tab không hợp lệ');const s=db().getSheetByName(name);if(!s)throw Error('Thiếu tab '+name+'. Chạy setup để nâng cấp giữ dữ liệu.');return s;}
-function rows(name){const s=sheet(name);if(s.getLastRow()<2)return [];return s.getRange(2,1,s.getLastRow()-1,TABLES[name].length).getDisplayValues().filter(v=>v[0]).map(v=>Object.fromEntries(TABLES[name].map((h,i)=>[h,v[i]])));}
+function rows(name){if(!Object.prototype.hasOwnProperty.call(rowCache_,name)){const s=sheet(name),last=s.getLastRow();rowCache_[name]=last<2?[]:s.getRange(2,1,last-1,TABLES[name].length).getDisplayValues().filter(v=>v[0]).map(v=>Object.fromEntries(TABLES[name].map((h,i)=>[h,v[i]])));}return rowCache_[name].map(r=>Object.assign({},r));}
 function safe(v){const s=String(v===undefined||v===null?'':v);return /^[=+@-]/.test(s)?"'"+s:s;}
-function append(name,data){if(!data.length)return;const s=sheet(name),end=s.getLastRow()+data.length;if(end>s.getMaxRows())s.insertRowsAfter(s.getMaxRows(),end-s.getMaxRows());s.getRange(s.getLastRow()+1,1,data.length,TABLES[name].length).setValues(data.map(o=>TABLES[name].map(h=>safe(o[h]))));}
-function replaceRow(name,id,value){const index=rows(name).findIndex(r=>r.id===id);if(index<0)throw Error('Không tìm thấy bản ghi');sheet(name).getRange(index+2,1,1,TABLES[name].length).setValues([TABLES[name].map(h=>safe(value[h]))]);}
+function append(name,data){if(!data.length)return;const s=sheet(name),end=s.getLastRow()+data.length;if(end>s.getMaxRows())s.insertRowsAfter(s.getMaxRows(),end-s.getMaxRows());s.getRange(s.getLastRow()+1,1,data.length,TABLES[name].length).setValues(data.map(o=>TABLES[name].map(h=>safe(o[h]))));delete rowCache_[name];}
+function replaceRow(name,id,value){const index=rows(name).findIndex(r=>r.id===id);if(index<0)throw Error('Không tìm thấy bản ghi');sheet(name).getRange(index+2,1,1,TABLES[name].length).setValues([TABLES[name].map(h=>safe(value[h]))]);delete rowCache_[name];}
 function uid(){return Utilities.getUuid();}
 function now(){return Utilities.formatDate(new Date(),'Asia/Ho_Chi_Minh',"yyyy-MM-dd'T'HH:mm:ss");}
 function today(){return now().slice(0,10);}
@@ -152,7 +154,7 @@ const handlers={
     if(c.remindersEnabled==='true'&&!Domain.emails(c.reminderEmail).length&&! (c.copyOwner==='true'))throw Error('Điền email nhận hoặc bật gửi cho chủ sở hữu');
     // Upsert individual keys; preserve unknown settings and existing values.
     Object.keys(c).forEach(k=>{const s=sheet('CauHinh'),index=rows('CauHinh').findIndex(r=>r.key===k);if(index<0)append('CauHinh',[{key:k,value:c[k]}]);else s.getRange(index+2,1,1,2).setValues([[k,safe(c[k])]]);});
-    const changed=['remindersEnabled','reminderHour'].some(k=>c[k]!==old[k]);if(changed)enableReminders();return 'Đã lưu cài đặt'+(changed?' và cập nhật lịch nhắc':'');},
+    delete rowCache_.CauHinh;const changed=['remindersEnabled','reminderHour'].some(k=>c[k]!==old[k]);if(changed)enableReminders();return 'Đã lưu cài đặt'+(changed?' và cập nhật lịch nhắc':'');},
   exportDepreciation(p){const data=getReport(p.month).map(a=>({month:p.month,assetCode:a.code,assetName:a.name,price:a.price,monthly:a.monthly,accumulated:a.accumulated,remaining:a.remaining}));const s=sheet('KhauHaoThang');if(s.getLastRow()>1)s.getRange(2,1,s.getLastRow()-1,7).clearContent();append('KhauHaoThang',data);return 'Đã xuất bảng khấu hao tháng '+p.month;}
 };
 function enableReminders(){const c=config();ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='sendReminders').forEach(t=>ScriptApp.deleteTrigger(t));if(c.remindersEnabled!=='true')return 'Đã tắt lịch nhắc';ScriptApp.newTrigger('sendReminders').timeBased().everyDays(1).atHour(Number(c.reminderHour||8)).inTimezone('Asia/Ho_Chi_Minh').create();return 'Đã áp dụng lịch gửi khoảng '+c.reminderHour+' giờ';}
@@ -212,3 +214,11 @@ handlers.markAuditPresent=function(p){
   const all=rows('ChiTietKiemKe'),lines=ids.map(id=>all.find(l=>l.id===id&&l.auditId===p.auditId));if(lines.some(l=>!l))throw Error('Có mục không thuộc đợt kiểm kê');
   lines.filter(l=>l.result==='CHUA_KIEM').forEach(l=>replaceRow('ChiTietKiemKe',l.id,Object.assign(l,{result:'CO_MAT',actual:l.expected,updatedAt:now()})));return 'Đã ghi nhận các mục chưa kiểm trong danh sách đã chọn';
 };
+function diagnose(){
+  const started=Date.now();
+  try{
+    db();console.log('Đã kết nối Google Sheets. Đang kiểm tra dữ liệu...');
+    const d=getData();const result={version:d.version,assets:d.assets.length,employees:d.employees.length,transactions:d.transactions.length,audits:d.audits.length,elapsedMs:Date.now()-started};
+    console.log('Kết nối thành công: '+JSON.stringify(result));return result;
+  }catch(e){console.error('Kiểm tra thất bại: '+e.message);throw e;}
+}

@@ -73,3 +73,10 @@ test('Migration preserves a previously configured V1 reminder trigger and recipi
  const a=app();a.run('settings',{reminderEmail:'kho@example.test'});a.c.ScriptApp.newTrigger('sendReminders').timeBased().everyDays(1).atHour(8).inTimezone('Asia/Ho_Chi_Minh').create();
  const index=a.sheets.CauHinh.values.findIndex(r=>r[0]==='remindersEnabled');a.sheets.CauHinh.values.splice(index,1);a.c.setup();assert.equal(a.data().settings.remindersEnabled,'true');assert.equal(a.data().settings.reminderEmail,'kho@example.test');assert.equal(a.triggers.length,1);
 });
+test('Dashboard reads each populated table once per execution and reuses the spreadsheet connection',()=>{
+ const a=app();a.newExecution();a.data();assert.equal(a.metrics.opens,1);assert.ok(Object.keys(a.metrics.reads).length>5);assert.ok(Object.values(a.metrics.reads).every(n=>n===1));
+ const old=fresh(a);a.run('saveAsset',{...old,price:12345678});assert.equal(Number(a.data().assets.find(x=>x.id===old.id).price),12345678);
+});
+test('Connection diagnostic only reads data and reports record counts',()=>{
+ const a=app(),before=JSON.stringify(a.data().assets),n=a.data().transactions.length;a.newExecution();const d=a.c.diagnose();assert.equal(d.version,2);assert.equal(d.assets,30);assert.equal(d.employees,4);assert.equal(JSON.stringify(a.data().assets),before);assert.equal(a.data().transactions.length,n);
+});

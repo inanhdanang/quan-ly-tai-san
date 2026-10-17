@@ -146,7 +146,7 @@ Kiểm thử cục bộ:
 node --test tests/*.test.cjs
 ```
 
-**29 kiểm thử**: nghiệp vụ cũ, nâng cấp V1→V2 giữ dữ liệu, mượn/trả, cấp phát bộ phận, báo hỏng/sửa chữa, thanh lý/lãi lỗ, khôi phục phiếu bị lỗi ghi, email nhiều người và đúng phạm vi, chống gửi lặp, PDF, ảnh, phạm vi kiểm kê, ghi nhận hàng loạt, link xuất XLSX và gợi ý mã.
+**31 kiểm thử**: nghiệp vụ cũ, nâng cấp V1→V2 giữ dữ liệu, mượn/trả, cấp phát bộ phận, báo hỏng/sửa chữa, thanh lý/lãi lỗ, khôi phục phiếu bị lỗi ghi, email nhiều người và đúng phạm vi, chống gửi lặp, PDF, ảnh, phạm vi kiểm kê, ghi nhận hàng loạt, link xuất XLSX và gợi ý mã.
 
 Kiểm tra trình duyệt Chromium với backend Google giả lập:
 
@@ -169,3 +169,5 @@ Có kiểm tra thêm/sửa giao diện, cấp phát, tìm kiếm/chọn nhiều,
 - [Thanh lý](Giao-dien-thanh-ly.png)
 - [Báo cáo khấu hao](Giao-dien-bao-cao.png)
 - [Kiểm kê điện thoại](Giao-dien-dien-thoai.png)
+
+Bản vá tải dữ liệu: bỏ phụ thuộc bước đọc tham số URL khi khởi động, hiển thị lỗi JavaScript/kết nối và giảm đọc Sheets lặp lại trong mỗi lần thực thi. Khi cần chẩn đoán, chạy hàm `diagnose` (chỉ đọc). Xem mục xử lý “Đang tải dữ liệu…” trong CAP-NHAT-V2.md.
