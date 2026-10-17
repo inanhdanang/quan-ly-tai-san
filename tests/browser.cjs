@@ -7,7 +7,10 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('n
   const p=await browser.newPage({viewport:{width:1440,height:980}}),errors=[];p.setDefaultTimeout(12000);p.on('pageerror',e=>{errors.push(e.message);console.error('PAGE ERROR:',e.message);});
   await p.exposeFunction('backend',async(name,args)=>{if(typeof backend.c[name]!=='function')throw Error('Unknown RPC');return JSON.parse(JSON.stringify(backend.c[name](...args)));});
   const bridge=`<script>window.google={script:{run:new Proxy({}, {get(_,name){if(name==='withSuccessHandler')return success=>new Proxy({}, {get(_,key){if(key==='withFailureHandler')return failure=>new Proxy({}, {get(_,fn){return (...args)=>window.backend(fn,args).then(success).catch(e=>failure({message:e.message}))}})}})}})}};</script>`;
-  const source=fs.readFileSync(root+'/Index.html','utf8').replace("<?!= HtmlService.createHtmlOutputFromFile('QR').getContent(); ?>",()=>fs.readFileSync(root+'/QR.html','utf8')).replace('<script>\nlet D',bridge+'<script>\nlet D');
+  const index=fs.readFileSync(root+'/Index.html','utf8'),clientSource=fs.readFileSync(root+'/App.js','utf8'),build=JSON.parse(fs.readFileSync(root+'/client-build.json','utf8'));
+  const clientTag=/<script src="https:\/\/cdn\.jsdelivr\.net\/gh\/[^"\s]+\/App\.js"[^>]*><\/script>/;
+  const qrTag=/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/qrcode-generator[^"\s]+"[^>]*><\/script>/;
+  const source=index.replace(qrTag,()=>fs.readFileSync(root+'/QR.html','utf8')).replace(clientTag,()=>bridge+'<script>\n'+clientSource+'</script>');
   await p.setContent(source);await p.waitForFunction(()=>typeof D!=='undefined'&&D&&document.getElementById('content').textContent.includes('Hoạt động gần đây'));
   await p.screenshot({path:root+'/Giao-dien-may-tinh.png',fullPage:true});
   for(const view of ['assets','issue','audit','stock','report','employees','catalog','settings']){await p.evaluate(v=>go(v),view);assert.ok((await p.locator('#content').innerText()).length>20);}
@@ -41,6 +44,12 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('n
   const failed=await browser.newPage();await failed.exposeFunction('backend',async()=>{throw Error('Thiếu tab PhongBan. Chạy setup');});await failed.setContent(source);await failed.waitForFunction(()=>document.getElementById('content').textContent.includes('Thiếu tab PhongBan'));assert.ok(await failed.getByRole('button',{name:'Thử lại',exact:true}).count());await failed.close();
   // The independent startup guard can report a syntax error in the main script.
   const malformed=await browser.newPage();await malformed.setContent(source.replace('let D, page=', 'let D ??? page='));await malformed.waitForFunction(()=>document.getElementById('content').textContent.includes('Chưa tải được dữ liệu'));await malformed.close();
+  // Validate the exact thin HTML using external script tags and SRI, with verified local response bytes.
+  const external=await browser.newPage();external.on('pageerror',e=>errors.push(e.message));await external.exposeFunction('backend',async(name,args)=>JSON.parse(JSON.stringify(backend.c[name](...args))));
+  await external.route(build.url,route=>route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:clientSource}));
+  const qrSource=fs.readFileSync(root+'/QR.html','utf8').replace(/^<script>\n/,'').replace(/\n<\/script>\s*$/,'');
+  await external.route('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',route=>route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:qrSource}));
+  await external.setContent(index.replace('</head>',()=>bridge+'</head>'));await external.waitForFunction(()=>window.__assetReady===true);assert.equal(await external.locator('#nav button').count(),9);await external.evaluate(id=>detail(id),a.id);assert.equal(await external.locator('.qr-box svg').count(),1);await external.close();
   const installer=await browser.newPage();installer.on('pageerror',e=>errors.push(e.message));await installer.setContent(fs.readFileSync(root+'/Bat-dau.html','utf8'));for(const name of ['Code.gs','Domain.js','Seed.gs','Index.html','QR.html','appsscript.json']){await installer.selectOption('#files',name);assert.equal(await installer.inputValue('#source'),fs.readFileSync(root+'/'+name,'utf8'),'Installer content mismatch: '+name);}await installer.close();
   assert.deepEqual(errors,[]);console.log('Browser PASS: dashboard, detail/QR link, grouped drawers, search/multi-select, person & department issue, sale preview/document, 5 report tabs/CSV, mobile audit/save/filter/menu, settings.');
  }finally{await browser.close();}

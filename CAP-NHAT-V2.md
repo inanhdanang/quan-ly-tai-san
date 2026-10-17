@@ -71,3 +71,21 @@ Bản vá sau V2 tải dữ liệu ngay, không chờ bước đọc tham số U
 5. Nếu vẫn không tải được, chụp thông báo mới trên trang và mục **Lần thực thi** của Apps Script (biểu tượng đồng hồ bên trái), mở lượt gọi getData/diagnose mới nhất. Không gửi mật khẩu/token hoặc toàn bộ dữ liệu tài sản.
 
 Thông báo mới giúp phân biệt lỗi giao diện, thiếu cấu trúc, quyền truy cập và Google xử lý chậm. Chưa thể kết luận nguyên nhân trên tài khoản thật chỉ từ vòng quay tải ban đầu.
+
+
+## Bản vá 2.0.2: diagnose thành công nhưng giao diện báo SyntaxError
+
+Nếu nhật ký đã ghi kết nối thành công (có số lượng tài sản/nhân viên), dữ liệu phía máy chủ đọc được. Lỗi “Invalid or unexpected token” thuộc mã JavaScript phía trình duyệt; dòng trong trang xuất ra có thể không cùng số dòng với file Index.html trong trình soạn thảo.
+
+Bản 2.0.2 tách toàn bộ mã giao diện khỏi HTML dài. Trình duyệt tải App.js từ một commit cố định trên jsDelivr, kiểm tra SHA-384; HTML mới không có scriptlet nhúng QR và không có các chuỗi HTML dài bên trong JavaScript. Nội dung trên CDN đã được đối chiếu byte với mã nguồn. Kiểm thử trình duyệt dùng cùng nội dung script và kiểm tra integrity; vẫn cần xác minh kết quả trong Web App Google thật.
+
+**Bạn đã chạy diagnose thành công thì chỉ thay một file:**
+
+1. Tải bản GitHub mới nhất, mở Bat-dau.html, chọn **Index.html → Sao chép nội dung**. Hoặc mở Index.html trên GitHub và sao chép toàn bộ file.
+2. Trong Apps Script đang dùng, mở **Index.html**, Ctrl+A trong vùng mã rồi dán thay toàn bộ; không dán nối phần cuối. Bản mới khoảng 29 dòng (một số dòng CSS dài), có tên phiên bản **v2.0.2** ở chân menu.
+3. Lưu. **Không cần chạy setup, không chạy seedDemo, không sửa các tab dữ liệu** cho bản vá này. Giữ Code.gs, Domain.gs và dữ liệu đang đọc tốt.
+4. **Triển khai → Quản lý bản triển khai → bút chì → Phiên bản mới → Triển khai**. Giữ quyền thực thi Tôi / Chỉ mình tôi và URL hiện có.
+5. Mở lại /exec, Ctrl+Shift+R. Kiểm tra chân menu có v2.0.2. Nếu vẫn thấy lỗi cũ mà chưa có dấu phiên bản này, kiểm tra đã cập nhật đúng bản triển khai.
+6. Nếu báo không tải được tệp giao diện, kiểm tra trình duyệt có truy cập được cdn.jsdelivr.net không; không tắt kiểm tra TLS/integrity. Nếu có lỗi mới, chụp nguyên thông báo.
+
+Không cần dán App.js vào Apps Script hoặc thay appsscript.json. Mã trên CDN là mã giao diện công khai, không chứa dữ liệu/khóa tài khoản của bạn. Dữ liệu vẫn được lấy từ Apps Script của bạn qua google.script.run.

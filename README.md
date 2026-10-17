@@ -2,6 +2,8 @@
 
 Ứng dụng cho hộ kinh doanh in ảnh, chạy bằng **Gmail thường + Google Sheets + Google Apps Script**. Không cần mua Google Workspace. Giao diện V2 được dựng lại theo các màn hình nhìn thấy trong video tham khảo: bố cục gọn, dashboard có biểu đồ trạng thái, trang tài sản hai cột, lịch sử dòng thời gian, biểu mẫu bên phải, kiểm kê điện thoại và các tab báo cáo.
 
+**Bản vá 2.0.2 cho lỗi “Invalid or unexpected token”:** nếu `diagnose` đã đọc dữ liệu thành công, chỉ cần thay **Index.html** rồi triển khai **Phiên bản mới**. Không chạy lại demo. Xem mục cuối [CAP-NHAT-V2.md](CAP-NHAT-V2.md).
+
 **Tải:** bấm **Code → Download ZIP** ở đầu trang GitHub. Giải nén, mở **`Bat-dau.html`** bằng Chrome để sao chép từng file.
 
 Đây là bộ mã độc lập, không phải mã nguồn hay file thương mại của tác giả video. Các phần văn bản bị che/không xuất hiện trong video được dựng lại thành mẫu dùng thử; cần kiểm tra trước khi sử dụng biên bản thật.
@@ -37,7 +39,7 @@ Xem hướng dẫn chi tiết [CAP-NHAT-V2.md](CAP-NHAT-V2.md).
 6. **Triển khai → Triển khai mới → Ứng dụng web**. Thực thi: **Tôi**. Quyền truy cập: **Chỉ mình tôi**.
 7. Mở URL `/exec`. Không chạy `doGet` từ nút Chạy để sử dụng ứng dụng.
 
-Không cần thêm Thư viện hoặc Dịch vụ nâng cao. QR dùng thư viện MIT **qrcode-generator 1.4.4** đã đóng gói trong `QR.html`, không gọi dịch vụ QR bên ngoài. Không gửi mật khẩu, mã xác minh hoặc token vào chat.
+Không cần thêm Thư viện hoặc Dịch vụ nâng cao. Từ 2.0.2, mã giao diện **App.js** được tải qua HTTPS từ jsDelivr, khóa ở một commit GitHub cố định và kiểm tra toàn vẹn SHA-384. Không cần tạo file App.js trong Apps Script. Thư viện MIT **qrcode-generator 1.4.4** cũng tải qua jsDelivr; QR được tính trong trình duyệt, không gửi thông tin tài sản đến dịch vụ tạo QR. `QR.html` giữ lại để tương thích bản cũ, không còn được nhúng vào Index.html mới. Trình duyệt cần truy cập được `cdn.jsdelivr.net`. Không gửi mật khẩu, mã xác minh hoặc token vào chat.
 
 ## Các màn hình và nghiệp vụ V2
 
@@ -146,7 +148,7 @@ Kiểm thử cục bộ:
 node --test tests/*.test.cjs
 ```
 
-**31 kiểm thử**: nghiệp vụ cũ, nâng cấp V1→V2 giữ dữ liệu, mượn/trả, cấp phát bộ phận, báo hỏng/sửa chữa, thanh lý/lãi lỗ, khôi phục phiếu bị lỗi ghi, email nhiều người và đúng phạm vi, chống gửi lặp, PDF, ảnh, phạm vi kiểm kê, ghi nhận hàng loạt, link xuất XLSX và gợi ý mã.
+**33 kiểm thử**: nghiệp vụ cũ, nâng cấp V1→V2 giữ dữ liệu, mượn/trả, cấp phát bộ phận, báo hỏng/sửa chữa, thanh lý/lãi lỗ, khôi phục phiếu bị lỗi ghi, email nhiều người và đúng phạm vi, chống gửi lặp, PDF, ảnh, phạm vi kiểm kê, ghi nhận hàng loạt, link xuất XLSX và gợi ý mã.
 
 Kiểm tra trình duyệt Chromium với backend Google giả lập:
 
@@ -171,3 +173,7 @@ Có kiểm tra thêm/sửa giao diện, cấp phát, tìm kiếm/chọn nhiều,
 - [Kiểm kê điện thoại](Giao-dien-dien-thoai.png)
 
 Bản vá tải dữ liệu: bỏ phụ thuộc bước đọc tham số URL khi khởi động, hiển thị lỗi JavaScript/kết nối và giảm đọc Sheets lặp lại trong mỗi lần thực thi. Khi cần chẩn đoán, chạy hàm `diagnose` (chỉ đọc). Xem mục xử lý “Đang tải dữ liệu…” trong CAP-NHAT-V2.md.
+
+## Bảo trì mã giao diện (dành cho người sửa mã)
+
+Logic trình duyệt ở `App.js`; `Index.html` chỉ chứa bố cục, CSS, bộ báo lỗi ngắn và thẻ tải script. Không dán lại App.js vào Index.html vì bản vá này chủ động tách JavaScript khỏi quá trình xuất HTML. Khi sửa App.js, commit/push file đó trước; chạy `python scripts/pin-client.py <commit-chứa-App.js>`, rồi `python scripts/build-installer.py`, kiểm thử và commit/push Index.html cùng client-build.json và Bat-dau.html. Công cụ pin từ chối nếu byte của App.js không đúng commit. Không bỏ kiểm tra integrity để ép một bản không khớp chạy.
