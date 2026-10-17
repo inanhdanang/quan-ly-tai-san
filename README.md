@@ -2,6 +2,8 @@
 
 Ứng dụng cho hộ kinh doanh in ảnh, chạy bằng **Gmail thường + Google Sheets + Google Apps Script**. Không cần mua Google Workspace. Giao diện V2 được dựng lại theo các màn hình nhìn thấy trong video tham khảo: bố cục gọn, dashboard có biểu đồ trạng thái, trang tài sản hai cột, lịch sử dòng thời gian, biểu mẫu bên phải, kiểm kê điện thoại và các tab báo cáo.
 
+**Giao diện 2.0.3 dễ đọc hơn:** tăng chữ nội dung, nhãn và ô nhập; tăng độ tương phản chữ phụ, nới nút bấm và khung biểu mẫu. Chỉ thay **Index.html** rồi triển khai **Phiên bản mới**; giữ nguyên dữ liệu và mã JavaScript đang chạy ổn.
+
 **Bản vá 2.0.2 cho lỗi “Invalid or unexpected token”:** nếu `diagnose` đã đọc dữ liệu thành công, chỉ cần thay **Index.html** rồi triển khai **Phiên bản mới**. Không chạy lại demo. Xem mục cuối [CAP-NHAT-V2.md](CAP-NHAT-V2.md).
 
 **Tải:** bấm **Code → Download ZIP** ở đầu trang GitHub. Giải nén, mở **`Bat-dau.html`** bằng Chrome để sao chép từng file.

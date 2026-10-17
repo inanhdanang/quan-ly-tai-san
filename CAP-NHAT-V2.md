@@ -82,10 +82,20 @@ Bản 2.0.2 tách toàn bộ mã giao diện khỏi HTML dài. Trình duyệt t�
 **Bạn đã chạy diagnose thành công thì chỉ thay một file:**
 
 1. Tải bản GitHub mới nhất, mở Bat-dau.html, chọn **Index.html → Sao chép nội dung**. Hoặc mở Index.html trên GitHub và sao chép toàn bộ file.
-2. Trong Apps Script đang dùng, mở **Index.html**, Ctrl+A trong vùng mã rồi dán thay toàn bộ; không dán nối phần cuối. Bản mới khoảng 29 dòng (một số dòng CSS dài), có tên phiên bản **v2.0.2** ở chân menu.
+2. Trong Apps Script đang dùng, mở **Index.html**, Ctrl+A trong vùng mã rồi dán thay toàn bộ; không dán nối phần cuối. Bản mới khoảng 29 dòng (một số dòng CSS dài), có tên phiên bản **v2.0.2 hoặc mới hơn** ở chân menu.
 3. Lưu. **Không cần chạy setup, không chạy seedDemo, không sửa các tab dữ liệu** cho bản vá này. Giữ Code.gs, Domain.gs và dữ liệu đang đọc tốt.
 4. **Triển khai → Quản lý bản triển khai → bút chì → Phiên bản mới → Triển khai**. Giữ quyền thực thi Tôi / Chỉ mình tôi và URL hiện có.
-5. Mở lại /exec, Ctrl+Shift+R. Kiểm tra chân menu có v2.0.2. Nếu vẫn thấy lỗi cũ mà chưa có dấu phiên bản này, kiểm tra đã cập nhật đúng bản triển khai.
+5. Mở lại /exec, Ctrl+Shift+R. Kiểm tra chân menu có v2.0.2 hoặc mới hơn. Nếu vẫn thấy lỗi cũ mà chưa có dấu phiên bản này, kiểm tra đã cập nhật đúng bản triển khai.
 6. Nếu báo không tải được tệp giao diện, kiểm tra trình duyệt có truy cập được cdn.jsdelivr.net không; không tắt kiểm tra TLS/integrity. Nếu có lỗi mới, chụp nguyên thông báo.
 
 Không cần dán App.js vào Apps Script hoặc thay appsscript.json. Mã trên CDN là mã giao diện công khai, không chứa dữ liệu/khóa tài khoản của bạn. Dữ liệu vẫn được lấy từ Apps Script của bạn qua google.script.run.
+
+
+## Giao diện 2.0.3: tăng cỡ chữ, không đổi dữ liệu
+
+1. Mở Index.html mới nhất trên GitHub (hoặc chọn Index.html trong Bat-dau.html mới).
+2. Trong Apps Script đang dùng, thay toàn bộ nội dung Index.html rồi Lưu.
+3. Triển khai → Quản lý bản triển khai → bút chì → Phiên bản mới → Triển khai.
+4. Mở lại /exec, Ctrl+Shift+R. Chân menu có **v2.0.3**.
+
+Không chạy setup, seedDemo hoặc thay các tab dữ liệu cho riêng bản cập nhật cỡ chữ này. Chữ ô nhập 15 px trên máy tính và 16 px trên điện thoại; nhãn 14 px; chữ phụ được làm rõ màu, biểu mẫu máy tính rộng 640 px, điện thoại xếp ô nhập thành một cột. Bộ JavaScript khóa ở bản đã kiểm tra trước đó, không thay đổi nghiệp vụ hay quyền Google.
